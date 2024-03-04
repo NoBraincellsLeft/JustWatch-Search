@@ -1,0 +1,36 @@
+name: Deploy to GitHub Pages
+
+# Run workflow on every push to the master branch
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master ]
+
+jobs:
+  deploy-to-github-pages:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET Core SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.x
+
+    - name: Publish .NET Core Project
+      run: dotnet publish JustWatchSearch/JustWatchSearch.csproj -c Release -o release --nologo
+    
+    - name: Change base-tag in index.html
+      run: sed -i 's/<base href="\/" \/>/<base href="\/JustWatch-Search\/" \/>/g' release/wwwroot/index.html
+    
+    - name: copy index.html to 404.html
+      run: cp release/wwwroot/index.html release/wwwroot/404.html
+
+    - name: Add .nojekyll file
+      run: touch release/wwwroot/.nojekyll
+      
+    - name: Commit wwwroot to GitHub Pages
+      uses: JamesIves/github-pages-deploy-action@v4
+      with:
+        BRANCH: gh-pages
+        FOLDER: release/wwwroot
