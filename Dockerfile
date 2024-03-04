@@ -1,5 +1,6 @@
 # Stage 1: Build the .NET Application
-FROM mcr.microsoft.com/dotnet/sdk:8.0-bookworm-slim-amd64 AS build-env
+FROM --platform=linux/amd64 mcr.microsoft.com/dotnet/sdk:8.0-bookworm-slim-amd64 AS build-env
+
 
 WORKDIR /app
 COPY . ./
