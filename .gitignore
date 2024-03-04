@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+
+!JustWatchSearch/Properties/PublishProfiles/github-docker.pubxml
