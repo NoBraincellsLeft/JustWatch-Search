@@ -1,0 +1,35 @@
+name: Publish to GH Container Registry
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x'
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Publish and push the container image
+        run: |
+          dotnet publish --os linux --arch x64 -c Release /p:PublishProfile=github-docker
