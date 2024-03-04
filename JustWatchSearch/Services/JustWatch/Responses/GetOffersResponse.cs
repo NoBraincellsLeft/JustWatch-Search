@@ -54,7 +54,7 @@ public class GetOffersResponse
 		public string RetailPrice { get; set; }
 
 		[JsonPropertyName("retailPriceValue")]
-		public double? RetailPriceValue { get; set; }
+		public decimal? RetailPriceValue { get; set; }
 
 		[JsonPropertyName("currency")]
 		public string Currency { get; set; }
