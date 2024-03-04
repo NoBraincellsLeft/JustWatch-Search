@@ -1,0 +1,121 @@
+﻿@page "/"
+@using JustWatchSearch.Services.JustWatch
+@using JustWatchSearch.Services.JustWatch.Responses
+@inject IJustwatchApiService _justWatchService
+
+<PageTitle>JustWatch Search</PageTitle>
+
+<div class="container mt-3">
+    @if (selectedTitle != null)
+    {
+        <button class="btn btn-secondary mb-3" @onclick="Goback" aria-label="Go back">Back</button>
+        <JustWatchTitle Title="selectedTitle" />
+    }
+    else if (searchResponse != null)
+    {
+        <h2>JustWatch Search</h2>
+
+        <div class="input-group mb-3">
+            <input type="text" class="form-control" @bind="searchQuery" @bind:event="oninput"
+                placeholder="Enter movie/show title..." />
+        </div>
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Title</th>
+                        <th>Release</th>
+                        <th>IMDB</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var title in searchResponse.Result.TitleResults)
+                    {
+                        <tr>
+                            <td>@title.Node.ObjectType</td>
+                            <td>@title.Node.Content.Title</td>
+                            <td>@title.Node.Content.OriginalReleaseYear</td>
+                            <td>
+                                <a href="https://www.imdb.com/title/@title.Node.Content.ExternalIds.ImdbId" target="_blank">
+                                    @title.Node.Content.ExternalIds.ImdbId</a>
+                            </td>
+                            <td>
+                                <Button class="btn btn-primary" @onclick="() => OpenMovie(title.Node)">Prices</Button> <a
+                                    class="btn btn-primary" target="_blank"
+                                    href="@($"https://justwatch.com{title.Node.Content.FullPath}")">
+                                    Justwatch
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex justify-content-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="sr-only"></span>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private SearchTitlesResponse? searchResponse;
+    private SearchTitlesResponse.TitleNode? selectedTitle;
+    private string _searchQuery = string.Empty;
+
+    private string searchQuery
+    {
+        get => _searchQuery;
+        set
+        {
+            if (_searchQuery != value)
+            {
+                _searchQuery = value;
+                _ = SearchAsType(value);
+            }
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        selectedTitle = null;
+        await SearchMovies("");
+    }
+
+
+    private CancellationTokenSource? debounceCancellationToken;
+    private async Task SearchAsType(string query)
+    {
+        debounceCancellationToken?.Cancel();
+        debounceCancellationToken = new CancellationTokenSource();
+        await Task.Delay(100, debounceCancellationToken.Token);
+        if (!debounceCancellationToken.Token.IsCancellationRequested)
+        {
+            searchQuery = query ?? string.Empty;
+            await SearchMovies(searchQuery, debounceCancellationToken.Token);
+        }
+    }
+
+    private async Task SearchMovies(string query, CancellationToken? token = null)
+    {
+        searchResponse = await _justWatchService.SearchTitlesAsync(query, token);
+        StateHasChanged();
+    }
+
+    private void OpenMovie(SearchTitlesResponse.TitleNode title)
+    {
+        selectedTitle = title;
+    }
+
+    private void Goback()
+    {
+        selectedTitle = null;
+    }
+
+}

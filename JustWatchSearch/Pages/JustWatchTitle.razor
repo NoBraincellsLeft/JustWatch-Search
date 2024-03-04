@@ -1,0 +1,82 @@
+@using JustWatchSearch.Services.JustWatch
+@using JustWatchSearch.Services.JustWatch.Responses
+@using BlazorBootstrap
+@using static JustWatchSearch.Services.JustWatch.JustwatchApiService
+
+@inject IJustwatchApiService _justWatchService
+
+<div class="card mb-4">
+    <div class="row g-0">
+        <div class="col-md-4">
+            <img src="https://images.justwatch.com/@Title.Content.PosterUrl" class="img-fluid rounded-start"
+                alt="Movie Poster" style="max-width: 150px;">
+        </div>
+        <div class="col-md-8">
+            <div class="card-body">
+                <h1 class="card-title">@Title.Content.Title (@Title.Content.OriginalReleaseYear)</h1>
+                <p class="card-text">@Title.Content.ShortDescription</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (titleOffers != null)
+{
+    <div class="table-responsive">
+        <Grid TItem="TitleOffer" AllowSorting="true" Class="table table-hover table-bordered table-striped"
+       
+            DataProvider="OffersDataProvider" Responsive="true">
+            <GridColumn TItem="TitleOffer" HeaderText="Service" SortKeySelector="item => item.OfferDetails.Type" >
+                @context.OfferDetails.Package.ClearName
+            </GridColumn>
+
+            <GridColumn TItem="TitleOffer" HeaderText="Country" SortKeySelector="item => item.Country">
+                @context.Country
+            </GridColumn>
+
+            <GridColumn TItem="TitleOffer" HeaderText="Price" SortKeySelector="item => item.OfferDetails.RetailPriceValue">
+                @context.OfferDetails.RetailPrice
+            </GridColumn>
+
+            <GridColumn TItem="TitleOffer" HeaderText="Resolution"
+                FilterValue="HD"
+                SortKeySelector="item => item.OfferDetails.PresentationType">
+                @context.OfferDetails.PresentationType
+            </GridColumn>
+
+            <GridColumn TItem="TitleOffer" HeaderText="Monetization Type"
+                SortKeySelector="item => item.OfferDetails.MonetizationType">
+                @context.OfferDetails.MonetizationType
+            </GridColumn>
+        </Grid>
+    </div>
+}
+else
+{
+    <div class="d-flex justify-content-center my-4">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only"></span>
+        </div>
+    </div>
+}
+
+@code {
+
+    [Parameter]
+    public required SearchTitlesResponse.TitleNode Title { get; set; }
+
+    private IEnumerable<TitleOffer>? titleOffers;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Title is null)
+            throw new ArgumentNullException(nameof(Title));
+
+        titleOffers = await _justWatchService.GetAllOffers(Title.Id, Title.Content.FullPath);
+    }
+
+    private async Task<GridDataProviderResult<TitleOffer>> OffersDataProvider(GridDataProviderRequest<TitleOffer> request)
+    {
+        return await Task.FromResult(request.ApplyTo(titleOffers));
+    }
+}
