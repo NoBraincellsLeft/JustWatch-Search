@@ -1,5 +1,5 @@
 # Stage 1: Build the .NET Application
-FROM mcr.microsoft.com/dotnet/sdk:8.0-bullseye-slim-amd64 AS build-env
+FROM mcr.microsoft.com/dotnet/sdk:8.0-bookworm-slim-amd64 AS build-env
 WORKDIR /app
 COPY . ./
 RUN dotnet restore JustWatchSearch/JustWatchSearch.csproj
