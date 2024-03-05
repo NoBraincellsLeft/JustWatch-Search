@@ -6,6 +6,7 @@ using JustWatchSearch.Models;
 using JustWatchSearch.Services.JustWatch.Responses;
 using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
+using System.Diagnostics.Metrics;
 using System.Text.Json;
 using System.Web;
 using static JustWatchSearch.Services.JustWatch.Responses.SearchTitlesResponse;
@@ -40,19 +41,18 @@ public partial class JustwatchApiService : IJustwatchApiService
 		}
 	}
 
-	public async Task<GetOffersResponse?> GetTitleOffers(string id, string country, CancellationToken? token)
+	public async Task<GetOffersResponse?> GetTitleOffers(string id, IEnumerable<string> countries, CancellationToken? token)
 	{
 		_logger.LogInformation("Got Title Offer request {id}", id);
 		try
 		{
-			var searchResult = await _graphQLClient.SendQueryAsync<GetOffersResponse>(JustWatchGraphQLQueries.GetTitleOffersQuery(id, country), token ?? default);
-			_logger.LogInformation("Got Offer Result {id} Errors: {Length} Offers: {Offers}", id, searchResult.Errors?.Length ?? 0, searchResult.Data.TitleNode?.OfferCount);
+			var searchResult = await _graphQLClient.SendQueryAsync<GetOffersResponse>(JustWatchGraphQLQueries.GetTitleOffersQuery(id, countries), token ?? default);
 			return searchResult.Data;
 		}
 		catch (TaskCanceledException) { throw; }
 		catch (Exception ex)
 		{
-			_logger.LogError("Searching title {input} failed with {ex}", id, ex);
+			_logger.LogError(" Get title Offers request {id} failed with {ex}", id, ex);
 			return null;
 		}
 	}
@@ -74,38 +74,23 @@ public partial class JustwatchApiService : IJustwatchApiService
 		return urlMetadataResponse?.HrefLangTags?.Select(tag => tag.Locale).ToArray() ?? new string[0];
 	}
 
-	public async Task<IEnumerable<TitleOfferViewModel>> GetAllOffers(string nodeId, string path, CancellationToken? token)
+	public async Task<IEnumerable<TitleOfferViewModel>?> GetAllOffers(string nodeId, string path, CancellationToken? token)
 	{
 		await _currencyConverter.InitializeAsync();
 		var locales = await GetAvaibleLocales(path);
 		_logger.LogInformation("Got locale {locales}", locales);
-		var result = new ConcurrentBag<TitleOfferViewModel>();
 
-		await Parallel.ForEachAsync(locales, new ParallelOptions()
-		{
-			MaxDegreeOfParallelism = 3
-		}, async (locale, ct) =>
-		{
-			var country = locale.Split("_").Last();
-			var titleOffer = await GetTitleOffers(nodeId, country, token);
-			if (titleOffer == null)
-				return;
-			var temp = titleOffer.TitleNode.BuyOffers.Select(o => new TitleOfferViewModel(o, country, _currencyConverter.ConvertToUSD(o.Currency, o.RetailPriceValue ?? 0)));
-			foreach (var offer in temp)
-			{
-				result.Add(offer);
-			}
-		});
+		var countries = locales.Select(o => o.Split("_").Last());
+		var titleOffer = await GetTitleOffers(nodeId, countries, token);
+		if (titleOffer == null)
+			return null;
 
-		return result.ToList();
+		return titleOffer.Offers.SelectMany(item => item.Value.Select(o => new TitleOfferViewModel(o, item.Key, _currencyConverter.ConvertToUSD(o.Currency, o.RetailPriceValue ?? 0))));
+
 	}
 
 	public async Task<TitleNode> GetTitle(string nodeId, string country = "us", CancellationToken? token = null)
 	{
-		GetOffersResponse titleOffer = await GetTitleOffers(nodeId, country, token);
 		throw new NotImplementedException();
-
-
-
 	}
 }
