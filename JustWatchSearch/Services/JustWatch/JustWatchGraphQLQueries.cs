@@ -1,4 +1,5 @@
 ﻿using GraphQL;
+using System.Diagnostics.Metrics;
 
 namespace JustWatchSearch.Services.JustWatch;
 
@@ -48,6 +49,29 @@ public static class JustWatchGraphQLQueries
 	}
 
 
+	public static GraphQLRequest GetTitleNode(string nodeId)
+	{
+
+		return new GraphQLRequest
+		{
+			OperationName = "GetTitleNode",
+			Query = _GetTitleNodeQuery,
+			Variables = new
+			{
+				Country = "US",
+				filterBuy = new { },
+				language = "en",
+				nodeId,
+				platform = "WEB",
+				formatPoster = "JPG",
+				formatOfferIcon = "PNG",
+				profile = "S718",
+				backdropProfile = "S1920",
+			}
+		};
+	}
+
+
 	#region stringQueries
 	public const string _getSearchTitlesQuery = @"
            query GetSearchTitles(
@@ -56,10 +80,8 @@ public static class JustWatchGraphQLQueries
   $language: Language!,
   $first: Int!,
   $formatPoster: ImageFormat,
-  $formatOfferIcon: ImageFormat,
   $profile: PosterProfile,
   $backdropProfile: BackdropProfile,
-  $filter: OfferFilter!,
 ) {
   popularTitles(
     country: $country
@@ -103,28 +125,55 @@ fragment SearchTitleGraphql on PopularTitlesEdge {
       }
       __typename
     }
-    offers(country: $country, platform: WEB, filter: $filter) {
-      monetizationType
-      presentationType
-      standardWebURL
-      retailPrice(language: $language)
-      retailPriceValue
-      currency
-      package {
-        id
-        packageId
-        clearName
-        technicalName
-        icon(profile: S100, format: $formatOfferIcon)
-        __typename
-      }
-      id
-      __typename
-    }
+
     __typename
   }
   __typename
 }";
+
+	private static string _GetTitleNodeQuery => @"
+query GetTitleNode(
+  $nodeId: ID!, 
+  $language: Language!, 
+  $country: Country!,
+  $formatPoster: ImageFormat,
+  $profile: PosterProfile,
+  $backdropProfile: BackdropProfile) {
+  node(id: $nodeId) {
+ 
+   ... on MovieOrShow {
+    id
+    objectId
+    objectType
+    content(country: $country, language: $language) {
+      title
+      fullPath
+      originalReleaseYear
+      originalReleaseDate
+      runtime
+      shortDescription
+      genres {
+        shortName
+        __typename
+      }
+      externalIds {
+        imdbId
+        __typename
+      }
+      posterUrl(profile: $profile, format: $formatPoster)
+      backdrops(profile: $backdropProfile, format: $formatPoster) {
+        backdropUrl
+        __typename
+      }
+      __typename
+    }
+
+    __typename
+  }
+}
+}
+";
+
 
 
 	private static string _GetTitleOffersQuery(IEnumerable<string> countries)
@@ -180,5 +229,6 @@ fragment TitleOffer on Offer {
 
 		return query;
 	}
+
 	#endregion
 }

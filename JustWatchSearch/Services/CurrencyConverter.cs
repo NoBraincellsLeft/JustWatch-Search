@@ -6,7 +6,7 @@ namespace JustWatchSearch.Services;
 public class CurrencyConverter : ICurrencyConverter
 {
 	private const string _apiUrl = "https://open.er-api.com/v6/latest/USD";
-	private ExchangeRateResponse _rates;
+	private ExchangeRateResponse? _rates;
 	private bool _initialized = false;
 
 	public CurrencyConverter() { }
@@ -37,7 +37,7 @@ public class CurrencyConverter : ICurrencyConverter
 		}
 	}
 
-	public decimal ConvertToUSD(string currencyCode, decimal amount)
+	public decimal ConvertToUSD(string? currencyCode, decimal amount)
 	{
 		if (!_initialized || _rates == null)
 		{
@@ -59,8 +59,8 @@ public class CurrencyConverter : ICurrencyConverter
 public class ExchangeRateResponse
 {
 	[JsonPropertyName("base_code")]
-	public string BaseCode { get; set; }
+	public string? BaseCode { get; set; }
 
 	[JsonPropertyName("rates")]
-	public Dictionary<string, decimal> Rates { get; set; }
+	public Dictionary<string, decimal> Rates { get; set; } = new Dictionary<string, decimal>();
 }

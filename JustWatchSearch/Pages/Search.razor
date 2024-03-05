@@ -1,20 +1,25 @@
 ﻿@page "/"
+@page "/title/{NodeId?}"
+@page "/search/{SearchQueryParam?}"
+
 @inject IJustwatchApiService _justWatchService
+@inject NavigationManager _navigationManager
 
 <PageTitle>JustWatch Search</PageTitle>
 
 <div class="container mt-3">
-    @if (selectedTitle != null)
+
+    @if (NodeId != null)
     {
         <button class="btn btn-secondary mb-3" @onclick="Goback" aria-label="Go back">Back</button>
-        <JustWatchTitle Title="selectedTitle" />
+        <JustWatchTitle Title="selectedTitle" NodeId="@NodeId" />
     }
     else if (searchResponse != null)
     {
         <h2>JustWatch Search</h2>
 
         <div class="input-group mb-3">
-            <input type="text" class="form-control" @bind="searchQuery" @bind:event="oninput"
+            <input type="text" class="form-control" @bind="SearchQuery" @bind:event="oninput"
                 placeholder="Enter movie/show title..." />
         </div>
         <div class="table-responsive">
@@ -32,17 +37,19 @@
                     @foreach (var title in searchResponse.Result.TitleResults)
                     {
                         <tr>
-                            <td>@title.Node.ObjectType</td>
-                            <td>@title.Node.Content.Title</td>
-                            <td>@title.Node.Content.OriginalReleaseYear</td>
+                            <td>@title?.Node?.ObjectType</td>
+                            <td>@title?.Node?.Content?.Title</td>
+                            <td>@title?.Node?.Content?.OriginalReleaseYear</td>
                             <td>
+                                @if (!string.IsNullOrEmpty(title?.Node?.Content?.ExternalIds?.ImdbId)){
                                 <a href="https://www.imdb.com/title/@title.Node.Content.ExternalIds.ImdbId" target="_blank">
                                     @title.Node.Content.ExternalIds.ImdbId</a>
+                                }
                             </td>
                             <td>
-                                <Button class="btn btn-primary" @onclick="() => OpenMovie(title.Node)">Prices</Button> <a
+                                <Button class="btn btn-primary" @onclick="() => OpenMovie(title?.Node)">Prices</Button> <a
                                     class="btn btn-primary" target="_blank"
-                                    href="@($"https://justwatch.com{title.Node.Content.FullPath}")">
+                                    href="@($"https://justwatch.com{title?.Node?.Content?.FullPath}")">
                                     Justwatch
                                 </a>
                             </td>
@@ -63,18 +70,23 @@
 </div>
 
 @code {
+    [Parameter]
+    public string? NodeId { get; set; }
     private SearchTitlesResponse? searchResponse;
-    private SearchTitlesResponse.TitleNode? selectedTitle;
-    private string _searchQuery = string.Empty;
+    private TitleNode? selectedTitle;
 
-    private string searchQuery
+    [Parameter]
+    public string? SearchQueryParam { get; set; }
+    private string? _searchQuery;
+    private string SearchQuery
     {
-        get => _searchQuery;
+        get => _searchQuery ?? string.Empty;
         set
         {
             if (_searchQuery != value)
             {
                 _searchQuery = value;
+                SearchQueryParam = value;
                 _ = SearchAsType(value);
             }
         }
@@ -82,21 +94,22 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await SearchMovies(SearchQuery);
         selectedTitle = null;
-        await SearchMovies("");
     }
-
 
     private CancellationTokenSource? debounceCancellationToken;
     private async Task SearchAsType(string query)
     {
+        _navigationManager.NavigateTo($"/search/{query}");
+
         debounceCancellationToken?.Cancel();
         debounceCancellationToken = new CancellationTokenSource();
         await Task.Delay(100, debounceCancellationToken.Token);
         if (!debounceCancellationToken.Token.IsCancellationRequested)
         {
-            searchQuery = query ?? string.Empty;
-            await SearchMovies(searchQuery, debounceCancellationToken.Token);
+            SearchQuery = query ?? string.Empty;
+            await SearchMovies(SearchQuery, debounceCancellationToken.Token);
         }
     }
 
@@ -106,14 +119,20 @@
         StateHasChanged();
     }
 
-    private void OpenMovie(SearchTitlesResponse.TitleNode title)
+    private void OpenMovie(TitleNode? title)
     {
+        if (title is null) return;
         selectedTitle = title;
+        _navigationManager.NavigateTo($"/title/{title.Id}");
+
     }
 
     private void Goback()
     {
         selectedTitle = null;
+        NodeId = null;
+        _navigationManager.NavigateTo($"/search/{SearchQuery}");
+
     }
 
 }

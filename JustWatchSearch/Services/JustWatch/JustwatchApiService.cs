@@ -1,12 +1,7 @@
-﻿using GraphQL;
-using GraphQL.Client.Abstractions;
-using GraphQL.Client.Http;
+﻿using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.SystemTextJson;
 using JustWatchSearch.Models;
 using JustWatchSearch.Services.JustWatch.Responses;
-using Microsoft.Extensions.Options;
-using System.Collections.Concurrent;
-using System.Diagnostics.Metrics;
 using System.Text.Json;
 using System.Web;
 using static JustWatchSearch.Services.JustWatch.Responses.SearchTitlesResponse;
@@ -57,6 +52,8 @@ public partial class JustwatchApiService : IJustwatchApiService
 		}
 	}
 
+
+
 	public async Task<UrlMetadataResponse?> GetUrlMetadataResponseAsync(string path)
 	{
 		using (var httpClient = new HttpClient())
@@ -71,7 +68,7 @@ public partial class JustwatchApiService : IJustwatchApiService
 	public async Task<string[]> GetAvaibleLocales(string path)
 	{
 		var urlMetadataResponse = await GetUrlMetadataResponseAsync(path);
-		return urlMetadataResponse?.HrefLangTags?.Select(tag => tag.Locale).ToArray() ?? new string[0];
+		return urlMetadataResponse?.HrefLangTags?.Select(tag => tag.Locale)?.ToArray() ?? new string[0];
 	}
 
 	public async Task<IEnumerable<TitleOfferViewModel>?> GetAllOffers(string nodeId, string path, CancellationToken? token)
@@ -89,8 +86,18 @@ public partial class JustwatchApiService : IJustwatchApiService
 
 	}
 
-	public async Task<TitleNode> GetTitle(string nodeId, string country = "us", CancellationToken? token = null)
+	public async Task<TitleNode?> GetTitle(string nodeId, CancellationToken? token = null)
 	{
-		throw new NotImplementedException();
+		try
+		{
+			var searchResult = await _graphQLClient.SendQueryAsync<TitleNodeWrapper>(JustWatchGraphQLQueries.GetTitleNode(nodeId), token ?? default);
+			return searchResult.Data?.Node;
+		}
+		catch (TaskCanceledException) { throw; }
+		catch (Exception ex)
+		{
+			_logger.LogError(" Get title Offers request {id} failed with {ex}", nodeId, ex);
+			return null;
+		}
 	}
 }
