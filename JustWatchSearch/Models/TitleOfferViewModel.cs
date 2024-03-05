@@ -13,10 +13,10 @@ public class TitleOfferViewModel
 	public string? PresentationType => OfferDetails?.PresentationType;
 	public string? MonetizationType => OfferDetails?.MonetizationType;
 
-	public FullOfferDetails OfferDetails { get; set; }
+	public OfferDetails OfferDetails { get; set; }
 
 
-	public TitleOfferViewModel(FullOfferDetails offerDetails, string country, decimal usdPrice)
+	public TitleOfferViewModel(OfferDetails offerDetails, string country, decimal usdPrice)
 	{
 		Country = country;
 		OfferDetails = offerDetails;
