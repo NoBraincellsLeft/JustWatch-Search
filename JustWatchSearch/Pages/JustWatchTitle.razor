@@ -1,20 +1,22 @@
 @inject IJustwatchApiService _justWatchService
 
-<div class="card mb-4">
-	<div class="row g-0">
-		<div class="col-md-4">
-			<img src="https://images.justwatch.com/@Title.Content.PosterUrl" class="img-fluid rounded-start"
-				 alt="Movie Poster" style="max-width: 150px;">
-		</div>
-		<div class="col-md-8">
-			<div class="card-body">
-				<h1 class="card-title">@Title.Content.Title (@Title.Content.OriginalReleaseYear)</h1>
-				<p class="card-text">@Title.Content.ShortDescription</p>
+@if (Title != null && Title.Content != null)
+{
+	<div class="card mb-4">
+		<div class="row g-0">
+			<div class="col-md-4">
+				<img src="https://images.justwatch.com/@Title.Content.PosterUrl" class="img-fluid rounded-start"
+					 alt="Movie Poster" style="max-width: 150px;">
+			</div>
+			<div class="col-md-8">
+				<div class="card-body">
+					<h1 class="card-title">@Title.Content.Title (@Title.Content.OriginalReleaseYear)</h1>
+					<p class="card-text">@Title.Content.ShortDescription</p>
+				</div>
 			</div>
 		</div>
 	</div>
-</div>
-
+}
 @if (titleOffers != null)
 {
 	<div class="table-responsive">
@@ -60,22 +62,26 @@ else
 }
 
 @code {
-
 	[Parameter]
-	public required SearchTitlesResponse.TitleNode Title { get; set; }
-
+	public TitleNode? Title { get; set; }
+	[Parameter]
+	public string? NodeId { get; set; }
 	private IEnumerable<TitleOfferViewModel>? titleOffers;
 
 	protected override async Task OnInitializedAsync()
 	{
-		if (Title is null)
+		if(Title is null && NodeId is not null)
+			Title = await _justWatchService.GetTitle(NodeId);
+
+		if (Title is null || Title.Content is null)
 			throw new ArgumentNullException(nameof(Title));
 
+		NodeId = Title.Id;
 		titleOffers = await _justWatchService.GetAllOffers(Title.Id, Title.Content.FullPath);
 	}
 
 	private async Task<GridDataProviderResult<TitleOfferViewModel>> OffersDataProvider(GridDataProviderRequest<TitleOfferViewModel> request)
 	{
-		return await Task.FromResult(request.ApplyTo(titleOffers));
+		return await Task.FromResult(request.ApplyTo(titleOffers ?? []));
 	}
 }

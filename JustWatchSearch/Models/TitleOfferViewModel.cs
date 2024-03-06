@@ -1,4 +1,4 @@
-﻿using static JustWatchSearch.Services.JustWatch.Responses.GetOffersResponse;
+﻿using JustWatchSearch.Services.JustWatch.Responses;
 namespace JustWatchSearch.Models;
 public class TitleOfferViewModel
 {
