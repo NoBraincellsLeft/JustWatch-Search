@@ -76,7 +76,7 @@
 
 	public string? SearchBoxInput
 	{
-		get => _searchQuery; set => _navigationManager.NavigateTo($"/search?q={Uri.EscapeDataString(value ?? "")}");
+		get => _searchQuery; set => _navigationManager.NavigateTo($"search?q={Uri.EscapeDataString(value ?? "")}");
 	}
 
 	private string? _searchQuery { get; set; }
@@ -131,14 +131,14 @@
 	{
 		if (title is null) return;
 		selectedTitle = title;
-		_navigationManager.NavigateTo($"/title/{title.Id}");
+		_navigationManager.NavigateTo($"title/{title.Id}");
 	}
 
 	private void Goback()
 	{
 		selectedTitle = null;
 		NodeId = null;
-		_navigationManager.NavigateTo($"/search?q={Uri.EscapeDataString(_searchQuery ?? "")}");
+		_navigationManager.NavigateTo($"search?q={Uri.EscapeDataString(_searchQuery ?? "")}");
 
 	}
 }
