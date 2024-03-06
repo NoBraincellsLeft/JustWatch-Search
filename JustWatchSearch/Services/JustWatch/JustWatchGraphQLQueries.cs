@@ -116,6 +116,7 @@ fragment SearchTitleGraphql on PopularTitlesEdge {
       }
       externalIds {
         imdbId
+        tmdbId
         __typename
       }
       posterUrl(profile: $profile, format: $formatPoster)
@@ -125,7 +126,6 @@ fragment SearchTitleGraphql on PopularTitlesEdge {
       }
       __typename
     }
-
     __typename
   }
   __typename
@@ -158,6 +158,7 @@ query GetTitleNode(
       }
       externalIds {
         imdbId
+        tmdbId
         __typename
       }
       posterUrl(profile: $profile, format: $formatPoster)
