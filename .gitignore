@@ -364,3 +364,7 @@ FodyWeavers.xsd
 
 
 !JustWatchSearch/Properties/PublishProfiles/github-docker.pubxml
+DownloadApi/vt
+/DownloadApi/Hangfire.db
+/DownloadApi/Hangfire.db-shm
+/DownloadApi/Hangfire.db-wal
