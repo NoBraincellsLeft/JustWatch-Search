@@ -1,4 +1,9 @@
+@using JustWatchSearch.Services.VT
+@using Common.Models
+@using Nager.PublicSuffix
+@using Nager.PublicSuffix.RuleProviders
 @inject IJustwatchApiService _justWatchService
+@inject IDownloadService _downloadService
 
 @if (Title != null && Title.Content != null)
 {
@@ -44,11 +49,50 @@
 				@context.PresentationType
 			</GridColumn>
 
-			<GridColumn TItem="TitleOfferViewModel" HeaderText="Monetization Type"
-						PropertyName="MonetizationType"
-						SortKeySelector="item => item.MonetizationType">
-				@context.MonetizationType
-			</GridColumn>
+            <GridColumn TItem="TitleOfferViewModel" HeaderText="Monetization Type"
+                        PropertyName="MonetizationType"
+                        SortKeySelector="item => item.MonetizationType">
+                @context.MonetizationType
+            </GridColumn>
+            <GridColumn TItem="TitleOfferViewModel" HeaderText="Download" PropertyName="Country" SortKeySelector="item => item.Country">
+                @if (context.PackageURL != null)
+                {
+                    if (apiAvaliable)
+                    { 
+                        ServiceInfo service = null;
+                        DomainInfo contentDomainInfo = _domainParser.Parse(new Uri(context.PackageURL));
+                        foreach (ServiceInfo serviceInfo in _serviceInfos)
+                        {
+                            foreach (var serviceInfoServiceUrl in serviceInfo.ServiceUrls)
+                            {
+                                DomainInfo serviceDomainInfo = _domainParser.Parse(new Uri(serviceInfoServiceUrl));
+                                if (serviceDomainInfo.RegistrableDomain == contentDomainInfo.RegistrableDomain)
+                                {
+                                    service = serviceInfo;
+                                    break;
+                                }
+                            }
+                        }
+                        if (service != null)
+                        {
+                            Console.WriteLine($"service was not null and is {service.ServiceTag} state {service.ServiceConfigurationState}");
+                            if (service.ServiceConfigurationState != ServiceConfigurationStateEnum.NotConfigured)
+                            {
+                                <Button class="btn btn-primary" @onclick="()=> DownloadButton(service,context.PackageURL,QUALITY_BEST)">Download best quality</Button>
+                                <Button class="btn btn-primary" @onclick="()=> DownloadButton(service,context.PackageURL,QUALITY_1080)">Download 1080p</Button>
+                                <Button class="btn btn-primary" @onclick="()=> DownloadButton(service,context.PackageURL,QUALITY_720)">Download 720p</Button>
+                                <Button class="btn btn-primary" @onclick="()=> DownloadButton(service,context.PackageURL,QUALITY_480)">Download 480p</Button>
+                            }
+                            else
+                            {
+                                <p>Service is not configured</p>
+                            }
+
+                        }
+                    }
+                }
+				
+            </GridColumn>
 		</Grid>
 	</div>
 }
@@ -67,9 +111,17 @@ else
 	[Parameter]
 	public string? NodeId { get; set; }
 	private IEnumerable<TitleOfferViewModel>? titleOffers;
-
+    private IEnumerable<ServiceInfo> _serviceInfos = null;
+    DomainParser _domainParser;
+    SimpleHttpRuleProvider _httpRuleProvider;
+    const string QUALITY_1080 = "1080";
+    const string QUALITY_720 = "720";
+    const string QUALITY_480 = "480";
+    const string QUALITY_BEST = "";
+    bool apiAvaliable = false;
 	protected override async Task OnInitializedAsync()
 	{
+
 		if(Title is null && NodeId is not null)
 			Title = await _justWatchService.GetTitle(NodeId);
 
@@ -78,10 +130,25 @@ else
 
 		NodeId = Title.Id;
 		titleOffers = await _justWatchService.GetAllOffers(Title.Id, Title.Content.FullPath);
-	}
+        _httpRuleProvider = new SimpleHttpRuleProvider();
+        await _httpRuleProvider.BuildAsync();
+        _domainParser = new DomainParser(_httpRuleProvider);
+        apiAvaliable = await _downloadService.IsServiceAvailable();
+        if (apiAvaliable)
+        {
+            _serviceInfos = await _downloadService.GetAvailableServices();
+        }
+
+    }
 
 	private async Task<GridDataProviderResult<TitleOfferViewModel>> OffersDataProvider(GridDataProviderRequest<TitleOfferViewModel> request)
 	{
 		return await Task.FromResult(request.ApplyTo(titleOffers ?? []));
 	}
+
+    private async Task  DownloadButton(ServiceInfo service, string url, string quality)
+    {
+       await _downloadService.StartDownload(service.ServiceTag, url, quality);
+    }
+
 }

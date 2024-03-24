@@ -1,0 +1,74 @@
+﻿@page "/available-services"
+@using JustWatchSearch.Services.VT
+@using System.ComponentModel.Design
+@using Common.Models
+@inject IDownloadService _downloadService
+<h3>AvaliableServices</h3>
+@if (!_isApiAvilable)
+{
+    <h1>Download API is unavailable or still loading </h1>
+}
+else
+{
+    
+    if (_services.Count == 0)
+    {
+        <h1>No services available in VT </h1>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                <tr>
+                    <th>ServiceId</th>
+                    <th>Urls</th>
+                    <th>Configured</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var service in _services)
+                {
+                    <tr>
+                        <td>@service.ServiceTag</td>
+                        <td>@string.Join(",",service.ServiceUrls).</td>
+                        @switch (service.ServiceConfigurationState)
+                        {
+                            case ServiceConfigurationStateEnum.NotConfigured:
+                            {
+                                <td>Not configured</td>
+                                break;
+                            }
+                            case ServiceConfigurationStateEnum.ConfiguredWithCookies:
+                            {
+                                <td>Configured with cookies</td>
+                                break;
+                            }
+                            case ServiceConfigurationStateEnum.ConfiguredWithCredentials:
+                            {
+                                <td>Configured with credentials</td>
+                                break;
+                            }
+                        }
+                  
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+}
+
+@code {
+    private bool _isApiAvilable = false;
+    private List<ServiceInfo> _services = new List<ServiceInfo>();
+    protected override async Task OnInitializedAsync()
+    {
+        _isApiAvilable = await _downloadService.IsServiceAvailable();
+        if (_isApiAvilable)
+        {
+            _services = await _downloadService.GetAvailableServices();
+        }
+    }
+
+}

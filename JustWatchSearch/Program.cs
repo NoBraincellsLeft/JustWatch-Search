@@ -1,16 +1,21 @@
 using JustWatchSearch;
 using JustWatchSearch.Services;
 using JustWatchSearch.Services.JustWatch;
+using JustWatchSearch.Services.VT;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using System.Reflection.PortableExecutable;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 builder.Services.AddBlazorBootstrap();
-
 builder.Services.AddSingleton<IJustwatchApiService, JustwatchApiService>();
 builder.Services.AddSingleton<ICurrencyConverter, CurrencyConverter>();
-
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+builder.Services.AddTransient<IDownloadService, VTDownloadService>();
+var envApiUrl = builder.Configuration.GetConnectionString("DOWNLOAD_API_URL");
+var apiUrl =  envApiUrl ?? "https://localhost:7052/";
+HttpClient client = new HttpClient{ BaseAddress = new Uri(apiUrl)};
+client.DefaultRequestHeaders.Add("Access-Control-Allow-Origin", "*");
+builder.Services.AddScoped(sp => client);
 await builder.Build().RunAsync();
