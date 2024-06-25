@@ -12,7 +12,7 @@ public partial class JustwatchApiService : IJustwatchApiService
 	private readonly GraphQLHttpClient _graphQLClient;
 	private readonly ILogger<JustwatchApiService> _logger;
 	private readonly ICurrencyConverter _currencyConverter;
-	private readonly string _baseAddress = "https://api.allorigins.win/get?url=https://apis.justwatch.com";
+	private readonly string _baseAddress = "https://cors-proxy.cooks.fyi/https://apis.justwatch.com";
 
 	public JustwatchApiService(ILogger<JustwatchApiService> logger, ICurrencyConverter currencyConverter)
 	{
